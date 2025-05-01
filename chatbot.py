@@ -77,16 +77,16 @@ def send_message_to_livechat(chat_id, message):
 def livechat_message():
     data = request.get_json()
     try:
-    message = data["payload"]["event"]["text"]
-    chat_id = data["payload"]["event"]["chat_id"]
-    print("GƏLƏN CHAT ID:", chat_id)
-
+        message = data["payload"]["event"]["text"]
+        chat_id = data["payload"]["event"]["chat_id"]
+        print("GƏLƏN CHAT ID:", chat_id)
     except KeyError:
         return jsonify({"error": "Format xətası"}), 400
 
     bot_response = get_chatgpt_response(message)
     send_message_to_livechat(chat_id, bot_response)
     return jsonify({"status": "Cavab göndərildi"}), 200
+
 
 @app.route("/livechat", methods=["POST"])
 def chat():
