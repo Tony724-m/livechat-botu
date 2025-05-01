@@ -57,13 +57,15 @@ def get_chatgpt_response(message):
     return answer
 
 @app.route("/livechat", methods=["POST"])
-def chat():
+def handle_incoming_event():
     data = request.get_json()
-    user_message = data.get("message", "")
-    if not user_message:
-        return jsonify({"error": "Mesaj boş olamaz"}), 400
 
-    bot_response = get_chatgpt_response(user_message)
-    return jsonify({"response": bot_response})
+    try:
+        event_value = data["payload"]["event"]["text"]
+    except KeyError:
+        return jsonify({"error": "Mesaj alınamadı"}), 400
+
+    response_text = get_chatgpt_response(event_value)
+    return jsonify({"response": response_text})
 
 app = app
