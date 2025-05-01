@@ -88,12 +88,15 @@ def livechat_message():
 
 @app.route("/livechat", methods=["POST"])
 def chat():
-    data = request.get_json()
-    user_message = data.get("message", "")
-    if not user_message:
-        return jsonify({"error": "Mesaj boş ola bilməz"}), 400
-    bot_response = get_chatgpt_response(user_message)
-    return jsonify({"response": bot_response})
+    try:
+        data = request.get_json(force=True)
+        user_message = data.get("message", "")
+        if not user_message:
+            return jsonify({"error": "Mesaj boş ola bilməz"}), 400
+        bot_response = get_chatgpt_response(user_message)
+        return jsonify({"response": bot_response})
+    except Exception as e:
+        return jsonify({"error": f"Server xətası: {str(e)}"}), 500
 
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=10000)
