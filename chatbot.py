@@ -77,8 +77,8 @@ def send_message_to_livechat(chat_id, message):
 def livechat_message():
     data = request.get_json()
     try:
-        message = data["payload"]["event"]["text"]
-        chat_id = data["payload"]["chat_id"]
+    message = data["payload"]["event"]["text"]
+    chat_id = data["payload"]["event"]["chat_id"]
         print("GƏLƏN CHAT ID:", chat_id)
     except KeyError:
         return jsonify({"error": "Format xətası"}), 400
