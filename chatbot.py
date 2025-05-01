@@ -1,30 +1,70 @@
-from flask import Flask, request, jsonify
-from openai import OpenAI
-from dotenv import load_dotenv
 import os
+import json
+import uuid
+from flask import Flask, request, jsonify
+import openai
+from sklearn.metrics.pairwise import cosine_similarity
+from sklearn.feature_extraction.text import TfidfVectorizer
 
-load_dotenv()
+openai.api_key = os.getenv("OPENAI_API_KEY")
 
 app = Flask(__name__)
 
-client = OpenAI()
+MEMORY_FILE = "memory.json"
 
-@app.route('/livechat', methods=['POST'])
-def livechat_webhook():
-    data = request.json
-    kullanici_mesaji = data.get('message', '')
+def load_memory():
+    if os.path.exists(MEMORY_FILE):
+        with open(MEMORY_FILE, "r", encoding="utf-8") as f:
+            return json.load(f)
+    return []
 
-    yanit = client.chat.completions.create(
+def save_to_memory(question, answer):
+    memory = load_memory()
+    memory.append({"id": str(uuid.uuid4()), "question": question, "answer": answer})
+    with open(MEMORY_FILE, "w", encoding="utf-8") as f:
+        json.dump(memory, f, ensure_ascii=False, indent=2)
+
+def find_similar_memory(question):
+    memory = load_memory()
+    if not memory:
+        return None
+
+    corpus = [item["question"] for item in memory]
+    corpus.append(question)
+    tfidf = TfidfVectorizer().fit_transform(corpus)
+    sims = cosine_similarity(tfidf[-1], tfidf[:-1])
+    most_similar_index = sims.argmax()
+    if sims[0][most_similar_index] > 0.7:
+        return memory[most_similar_index]
+    return None
+
+def get_chatgpt_response(message):
+    similar = find_similar_memory(message)
+    if similar:
+        return f"(Hafızadan): {similar['answer']}"
+
+    response = openai.ChatCompletion.create(
         model="gpt-4",
         messages=[
-            {"role": "system", "content": "Sən bir canlı dəstək botsan. Yalnız Azərbaycan türkcəsində cavab ver."},
-            {"role": "user", "content": kullanici_mesaji}
+            {"role": "system", "content": "Sen BetXline canlı destek botusun. Bonuslar, yatırım, çekim ve kurallarla ilgili her soruya net, doğru ve kararlı cevap ver."},
+            {"role": "user", "content": message}
         ],
-        temperature=0.7
+        temperature=0.3
     )
 
-    cevap = yanit.choices[0].message.content
-    return jsonify({"reply": cevap})
+    answer = response.choices[0].message["content"].strip()
+    save_to_memory(message, answer)
+    return answer
 
-if __name__ == "__main__":
-    app.run(port=5000)
+@app.route("/livechat", methods=["POST"])
+def chat():
+    data = request.get_json()
+    user_message = data.get("message", "")
+    if not user_message:
+        return jsonify({"error": "Mesaj boş olamaz"}), 400
+
+    bot_response = get_chatgpt_response(user_message)
+    return jsonify({"response": bot_response})
+
+if name == "__main__":
+    app.run(host="0.0.0.0", port=10000)
