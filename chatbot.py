@@ -79,6 +79,7 @@ def livechat_message():
     try:
         message = data["payload"]["event"]["text"]
         chat_id = data["payload"]["chat_id"]
+        print("GƏLƏN CHAT ID:", chat_id)
     except KeyError:
         return jsonify({"error": "Format xətası"}), 400
 
