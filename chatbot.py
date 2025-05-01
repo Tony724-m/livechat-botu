@@ -66,5 +66,4 @@ def chat():
     bot_response = get_chatgpt_response(user_message)
     return jsonify({"response": bot_response})
 
-if name == "__main__":
-    app.run(host="0.0.0.0", port=10000)
+app = app
